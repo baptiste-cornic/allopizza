@@ -2,6 +2,7 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\Product;
 use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -37,6 +38,16 @@ class AppFixtures extends Fixture
             $manager->persist($user);
         }
 
+        $product = new Product();
+        $product->setName($faker->name());
+        $product->setPrice($faker->randomFloat(2,5,30));
+        $product->setIngredients($faker->text());
+        $product->setImage($faker->image());
+
+        $manager->persist($product);
+
         $manager->flush();
+
+
     }
 }
