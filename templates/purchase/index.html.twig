@@ -5,11 +5,11 @@
 {% block body %}
     <h1 class="text-center m-4">Commander</h1>
     <div class="row">
-        <div class="col-9">
+        <div class="col-8">
             <div class="row">
 
-
                 {% for product in products %}
+                    {% set quantity = cart[product.id]['quantity'] is defined ? cart[product.id]['quantity'] : 0 %}
 
                     <div class="col-4 mb-4">
                         <div class="card m-auto h-100" style="width: 16rem;">
@@ -17,10 +17,20 @@
                             <img class="card-img-top" src="{{ product.image }}" alt="{{ product.name }}">
                             <div class="card-body">
                                 <p class="card-text">{{ product.ingredients }}</p>
-
                             </div>
                             <div class="card-bottom px-3">
-                                <span class="text-end px-4 ">{{ product.price }} €</span>
+                                <span class="px-4">{{ product.price }} €</span>
+                                <div class="px-4 mb-2">
+                                    <a href="{{ path('remove_cart', { 'id': product.id }) }}">
+                                        <span class="badge rounded-pill bg-danger">-</span>
+                                    </a>
+                                    <span class="badge rounded-pill bg-secondary">
+                                        {{ quantity }}
+                                    </span>
+                                    <a href="{{ path('add_cart', { 'id': product.id }) }}">
+                                        <span class="badge rounded-pill bg-success">+</span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -28,18 +38,59 @@
                 {% endfor %}
             </div>
         </div>
-        <div class="col-3">
+        <div class="col-4">
             <div class="row">
-                <div class="card">
+                <div class="card p-0">
                     <h4 class="text-center m-2">Commande</h4>
+                    {% if cart is not empty %}
+                        <table  class="table table-striped" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Pizza</th>
+                                    <th scope="col">Quantité</th>
+                                    <th scope="col">Prix</th>
 
-                    <div class="card-body">
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pizza in cart %}
+                                    {% if pizza.quantity > 0 %}
+                                        <tr class="table-default">
+                                            <th scope="col">{{ pizza.product.name }}</th>
+                                            <td>
+                                                <div>
+                                                    <a href="{{ path('remove_cart', { 'id': pizza.product.id }) }}">
+                                                        <span class="badge rounded-pill bg-danger">-</span>
+                                                    </a>
+                                                    <span class="badge rounded-pill bg-secondary">
+                                                        {{ pizza.quantity }}
+                                                    </span>
+                                                    <a href="{{ path('add_cart', { 'id': pizza.product.id }) }}">
+                                                        <span class="badge rounded-pill bg-success">+</span>
+                                                    </a>
+                                                    <a href="{{ path('delete_cart', { 'id': pizza.product.id }) }}">
+                                                        🗑️
+                                                    </a>
+                                                </div>
+                                            </td>
 
-
-                    </div>
-                    <div class="card-bottom px-3">
-                        <p class="text-end px-4">Total :  €</p>
-                    </div>
+                                            <td>{{ pizza.quantity * pizza.product.price }} €</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-primary">
+                                    <td colspan="2" style="font-weight: bold">Total </td>
+                                    <td style="font-weight: bold">{{ total_price}} €</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <span class="badge rounded-pill bg-success p-2 w-50 m-auto">Commander</span>
+                        <a class="text-center" href="{{ path('clear_cart') }}">Vider le panier</a>
+                    {% else %}
+                        <p class="text-center">Aucun article dans le panier</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
