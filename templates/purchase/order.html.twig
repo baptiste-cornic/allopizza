@@ -1,0 +1,51 @@
+<div class="card p-0">
+    <h4 class="text-center m-2">Commande</h4>
+    {% if cart is not empty %}
+        <table  class="table table-striped" style="width:100%;">
+            <thead>
+                <tr>
+                    <th scope="col">Pizza</th>
+                    <th scope="col">Quantité</th>
+                    <th scope="col">Prix</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for pizza in cart %}
+                {% if pizza.quantity > 0 %}
+                    <tr class="table-default">
+                        <th scope="col">{{ pizza.product.name }}</th>
+                        <td>
+                            <div>
+                                <a href="{{ path('remove_cart', { 'id': pizza.product.id }) }}">
+                                    <span class="badge rounded-pill bg-danger">-</span>
+                                </a>
+                                <span class="badge rounded-pill bg-secondary">
+                                                        {{ pizza.quantity }}
+                                                    </span>
+                                <a href="{{ path('add_cart', { 'id': pizza.product.id }) }}">
+                                    <span class="badge rounded-pill bg-success">+</span>
+                                </a>
+                                <a href="{{ path('delete_cart', { 'id': pizza.product.id }) }}">
+                                    🗑️
+                                </a>
+                            </div>
+                        </td>
+
+                        <td>{{ pizza.quantity * pizza.product.price }} €</td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-primary">
+                    <td colspan="2" style="font-weight: bold">Total </td>
+                    <td style="font-weight: bold">{{ total_price}} €</td>
+                </tr>
+            </tfoot>
+        </table>
+        <span class="badge rounded-pill bg-success p-2 w-50 m-auto"><a style="color: white" href="{{ path('purchase') }}">Commander</a></span>
+        <a class="text-center" href="{{ path('clear_cart') }}">Vider le panier</a>
+    {% else %}
+        <p class="text-center">Aucun article dans le panier</p>
+    {% endif %}
+</div>

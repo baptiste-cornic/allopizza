@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Repository\ProductRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -17,7 +18,7 @@ class ProductController extends AbstractController
         $this->requestStack = $requestStack;
     }
 
-    #[Route('/purchase', name: 'purchase')]
+    #[Route('/product', name: 'product')]
     public function index(ProductRepository $productRepo): Response
     {
         $products = $productRepo->findAll();
@@ -37,7 +38,7 @@ class ProductController extends AbstractController
             }
         }
 
-        return $this->render('purchase/index.html.twig', [
+        return $this->render('product/index.html.twig', [
             'products' => $products,
             'cart' => $fullCart,
             'total_price' => $totalPrice,
@@ -45,64 +46,45 @@ class ProductController extends AbstractController
     }
 
     #[Route('/add_cart/{id}', name: 'add_cart')]
-    public function addCart(ProductRepository $productRepo, $id = null): Response
+    public function addCart(ProductRepository $productRepo, $id = null, Request $request): Response
     {
         if (!$id){
             $this->addFlash('error', 'Erreur' );
-            return $this->redirectToRoute('purchase');
+            return $this->redirectToRoute('product');
         }
 
+        $referer = $request->headers->get('referer');
+
         $session = $this->requestStack->getSession();
-        //$session->remove('cart');
         $cart = $session->get('cart', []);
-        if (!empty($cart[$id])){
+
+        if (!empty($cart[$id]))
             $cart[$id]++;
-        }else{
+        else
             $cart[$id] = 1;
-        }
 
         $session->set('cart', $cart);
 
-/*
-dump($pizza);
-        dump($cart[0] == $pizza);
-        dump($cart[0]);
-        dd($cart);
-
-        if (in_array($pizza, $cart)){
-            dump($cart);
-        }
-        else{
-            $pizza->quantity = 1;
-            array_push($cart, $pizza);
-            $session->set('cart', $cart);
-
-        }
-
-        dd($session->get('cart'));
-*/
-/*
-        $session = $this->requestStack->getSession();
-        $order = $session->get('cart', []);
-        $session->get('cart', []);
-        array_push($order, ['name' => $pizza, 'quantity' => 1]);
-
-        $session->set('order', $order);
-*/
-        return $this->redirectToRoute('purchase');
+        return $this->redirect($referer);
     }
 
     #[Route('/remove_cart/{id}', name: 'remove_cart')]
-    public function removeCart(ProductRepository $productRepo, $id = null): Response
+    public function removeCart(ProductRepository $productRepo, $id = null, Request $request): Response
     {
         if (!$id){
             $this->addFlash('error', 'Erreur' );
-            return $this->redirectToRoute('purchase');
+            return $this->redirectToRoute('product');
         }
+
+        $referer = $request->headers->get('referer');
 
         $session = $this->requestStack->getSession();
 
         $cart = $session->get('cart', []);
+
+        if($cart[$id] < 1) {
+            unset($cart[$id]);
+        }
 
         if (!empty($cart[$id])){
             $cart[$id] = $cart[$id] -1;
@@ -110,7 +92,7 @@ dump($pizza);
 
         $session->set('cart', $cart);
 
-        return $this->redirectToRoute('purchase');
+        return $this->redirect($referer);
     }
 
     #[Route('/clear_cart', name: 'clear_cart')]
@@ -119,16 +101,18 @@ dump($pizza);
         $session = $this->requestStack->getSession();
         $session->remove('cart');
 
-        return $this->redirectToRoute('purchase');
+        return $this->redirectToRoute('product');
     }
 
     #[Route('/delete_cart/{id}', name: 'delete_cart')]
-    public function deleteCart(ProductRepository $productRepo, $id = null): Response
+    public function deleteCart( $id = null, Request $request): Response
     {
         if (!$id){
             $this->addFlash('error', 'Erreur' );
-            return $this->redirectToRoute('purchase');
+            return $this->redirectToRoute('product');
         }
+
+        $referer = $request->headers->get('referer');
 
         $session = $this->requestStack->getSession();
         $cart = $session->get('cart', []);
@@ -139,10 +123,6 @@ dump($pizza);
         }
         $session->set('cart', $cart);
 
-        return $this->redirectToRoute('purchase');
+        return $this->redirect($referer);
     }
-
-
-
-
 }
