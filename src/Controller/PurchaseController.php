@@ -7,6 +7,8 @@ use App\Entity\Purchase;
 use App\Entity\PurchaseItem;
 use App\Form\PurchaseType;
 use App\Repository\ProductRepository;
+use App\Repository\PurchaseItemRepository;
+use App\Repository\PurchaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -77,6 +79,10 @@ class PurchaseController extends AbstractController
             }
 
             $em->flush();
+
+            $session->set('purchase',$purchase );
+
+            return $this->redirectToRoute('purchase_confirmation');
         }
 
         return $this->render('purchase/index.html.twig', [
@@ -84,5 +90,58 @@ class PurchaseController extends AbstractController
             'total_price' => $totalPrice,
             'form' => $form->createView(),
         ]);
+    }
+
+    #[Route('/purchase_confirmation', name: 'purchase_confirmation')]
+    public function purchaseConfirmation(PurchaseItemRepository $purchaseItemRepo): Response
+    {
+        $session = $this->requestStack->getSession();
+
+        /** @var PurchaseItem $purchase */
+        $purchase = $session->get('purchase');
+
+        if (!$purchase){
+            $this->addFlash('notice', 'Vous devez faire une commande' );
+            return $this->redirectToRoute('purchase');
+        }
+
+        $purchaseItems = $purchaseItemRepo->findBy(['purchase' =>$purchase ]);
+
+        \Stripe\Stripe::setApiKey('sk_test_51M7bsdCZpiMH9jLxOZdLAeHz0mJNNMwqMnCPYTBn0qMWRULF9J34YXgaijklermh3CTWRFr3jbFm5W5uO1USPamr00jwUkIY7Z');
+
+        // Create a PaymentIntent with amount and currency
+        $paymentIntent = \Stripe\PaymentIntent::create([
+            'amount' => $purchase->getAmount() * 100,
+            'currency' => 'eur',
+            'automatic_payment_methods' => [
+                'enabled' => true,
+            ],
+        ]);
+
+        return $this->render('purchase/purchase_confirmation.html.twig', [
+            'purchase' => $purchase,
+            'purchaseItems' => $purchaseItems,
+            'clientSecret' => $paymentIntent->client_secret,
+        ]);
+    }
+
+    #[Route('/paymentSuccess/{id}', name: 'payment_success')]
+    public function paymentSucess(int $id, PurchaseRepository $purchaseRepo, EntityManagerInterface $em): Response
+    {
+        $purchase = $purchaseRepo->find($id);
+        if (!$purchase){
+            $this->addFlash('notice', 'Commande invalide' );
+            return $this->redirectToRoute('product');
+        }
+
+        $purchase->setStatus('done');
+        $em->flush();
+
+        $session = $this->requestStack->getSession();
+        $session->remove('cart');
+        $session->remove('purchase');
+
+        $this->addFlash('success', 'Bravo, tu viens de raquer.');
+        return $this->redirectToRoute('home');
     }
 }
