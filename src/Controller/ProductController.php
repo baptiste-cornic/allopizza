@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\ProductRepository;
+use App\Service\PurchaseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -19,29 +20,19 @@ class ProductController extends AbstractController
     }
 
     #[Route('/product', name: 'product')]
-    public function index(ProductRepository $productRepo): Response
+    public function index(ProductRepository $productRepo, PurchaseService $purchaseService): Response
     {
         $products = $productRepo->findAll();
         
         $session = $this->requestStack->getSession();
         $cart = $session->get('cart', []);
-        $fullCart = [];
-        $totalPrice = 0;
-        foreach ($cart as $id => $quantity) {
-            $product = $productRepo->find($id);
-            if($product){
-                $fullCart[$id]=[
-                    'quantity' => $quantity,
-                    'product' => $product
-                ];
-                $totalPrice = $totalPrice + $product->getPrice() * $quantity;
-            }
-        }
+
+        $fullCart = $purchaseService->getFullCart();
 
         return $this->render('product/index.html.twig', [
             'products' => $products,
-            'cart' => $fullCart,
-            'total_price' => $totalPrice,
+            'cart' => $fullCart['cart'],
+            'total_price' => $fullCart['totalPrice'],
         ]);
     }
 

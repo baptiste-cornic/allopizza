@@ -9,6 +9,7 @@ use App\Form\PurchaseType;
 use App\Repository\ProductRepository;
 use App\Repository\PurchaseItemRepository;
 use App\Repository\PurchaseRepository;
+use App\Service\PurchaseService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,7 +27,7 @@ class PurchaseController extends AbstractController
     }
 
     #[Route('/purchase', name: 'purchase')]
-    public function index(Request $request, ProductRepository $productRepo, EntityManagerInterface $em): Response
+    public function index(Request $request, ProductRepository $productRepo, EntityManagerInterface $em, PurchaseService $purchaseService): Response
     {
         if (!$this->getUser()){
             $this->addFlash('notice', 'Vous devez vous connecter pour aller plus loin.' );
@@ -41,18 +42,7 @@ class PurchaseController extends AbstractController
             return $this->redirectToRoute('product');
         }
 
-        $fullCart = [];
-        $totalPrice = 0;
-        foreach ($cart as $id => $quantity) {
-            $product = $productRepo->find($id);
-            if($product){
-                $fullCart[$id]=[
-                    'quantity' => $quantity,
-                    'product' => $product
-                ];
-                $totalPrice = $totalPrice + $product->getPrice() * $quantity;
-            }
-        }
+        $fullCart = $purchaseService->getFullCart();
 
         $purchase = new Purchase();
         $form = $this->createForm(PurchaseType::class ,$purchase);
@@ -63,10 +53,10 @@ class PurchaseController extends AbstractController
             $purchase->setUser($this->getUser());
             $purchase->setPurchasetAt(new \DateTime());
             $purchase->setStatus('waiting');
-            $purchase->setAmount($totalPrice);
+            $purchase->setAmount($fullCart['totalPrice']);
             $em->persist($purchase);
 
-            foreach ($fullCart as $item){
+            foreach ($fullCart['cart'] as $item){
 
                 $purchaseItem = new PurchaseItem();
                 $purchaseItem->setProduct($item['product']);
@@ -86,8 +76,8 @@ class PurchaseController extends AbstractController
         }
 
         return $this->render('purchase/index.html.twig', [
-            'cart' => $fullCart,
-            'total_price' => $totalPrice,
+            'cart' => $fullCart['cart'],
+            'total_price' => $fullCart['totalPrice'],
             'form' => $form->createView(),
         ]);
     }
